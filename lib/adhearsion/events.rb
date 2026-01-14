@@ -81,11 +81,13 @@ module Adhearsion
       end
 
       def queue
-        unless @queue && @queue.alive?
-          init
-        end
+        synchronize do
+          unless @queue && @queue.alive?
+            init
+          end
 
-        @queue
+          @queue
+        end
       end
 
       def init
@@ -95,11 +97,21 @@ module Adhearsion
       end
 
       def refresh!
-        clear
-        init
+        synchronize do
+          clear_without_lock
+          init
+        end
       end
 
       def clear
+        synchronize do
+          clear_without_lock
+        end
+      end
+
+      private
+
+      def clear_without_lock
         @queue = nil
         Handler.instance.clear_handlers
       end
