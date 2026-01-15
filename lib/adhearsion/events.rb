@@ -73,12 +73,6 @@ module Adhearsion
     end
 
     class << self
-      @mutex = Mutex.new
-
-      def synchronize(&block)
-        @mutex.synchronize(&block)
-      end
-
       def method_missing(method_name, *args, &block)
         Handler.instance.send method_name, *args, &block
       end
