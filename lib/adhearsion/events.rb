@@ -42,6 +42,7 @@ module Adhearsion
       def initialize(size)
         @workers = size.times.map { Worker.new }
         @index = 0
+        @mutex = Mutex.new
       end
 
       def async
@@ -49,9 +50,21 @@ module Adhearsion
       end
 
       def work(type, object)
-        worker = @workers[@index]
-        @index = (@index + 1) % @workers.size
+        worker = @mutex.synchronize do
+          w = @workers[@index]
+          @index = (@index + 1) % @workers.size
+          w
+        end
         worker.async.work(type, object)
+      end
+
+      def work_sync(type, object)
+        worker = @mutex.synchronize do
+          w = @workers[@index]
+          @index = (@index + 1) % @workers.size
+          w
+        end
+        worker.work(type, object)
       end
 
       def alive?
@@ -60,6 +73,12 @@ module Adhearsion
     end
 
     class << self
+      @mutex = Mutex.new
+
+      def synchronize(&block)
+        @mutex.synchronize(&block)
+      end
+
       def method_missing(method_name, *args, &block)
         Handler.instance.send method_name, *args, &block
       end
@@ -73,7 +92,7 @@ module Adhearsion
       end
 
       def trigger_immediately(type, object = nil)
-        queue.work type, object
+        queue.work_sync type, object
       end
 
       def draw(&block)
