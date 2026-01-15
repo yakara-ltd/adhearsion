@@ -32,8 +32,12 @@ module Adhearsion
         end
 
         def execute(output_document, controller)
+          @logger = Adhearsion::Logging.get_logger(self.class)
+          grammar_xml = grammars.first[:value].to_s
+          @logger.info "[MenuBuilder] Grammar being sent to FreeSWITCH:\n#{grammar_xml}"
           catch :match do
-            (@options[:tries] || 1).times do
+            (@options[:tries] || 1).times do |try_num|
+              @logger.debug "[MenuBuilder] Try #{try_num + 1}/#{@options[:tries] || 1}"
               result = PromptBuilder.new(output_document, grammars, @options).execute(controller)
               process_result result
             end
@@ -48,6 +52,7 @@ module Adhearsion
         end
 
         def process_result(result)
+          @logger.info "[MenuBuilder] FreeSWITCH returned: status=#{result.status} utterance=#{result.utterance.inspect} interpretation=#{result.interpretation.inspect}"
           if result.status == :match
             handle_match result
           else

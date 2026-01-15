@@ -42,28 +42,21 @@ module Adhearsion
             @matcher = if grammar.url
               BuiltinMatcherCache.instance.get(grammar.url)
             else
-              grammar_xml = grammar.value.to_s
-              Adhearsion::Logging.get_logger(self.class).info "[DTMF:recognizer] Initializing with grammar:\n#{grammar_xml}"
-              RubySpeech::GRXML::Matcher.new RubySpeech::GRXML.import(grammar_xml)
+              RubySpeech::GRXML::Matcher.new RubySpeech::GRXML.import(grammar.value.to_s)
             end
             @buffer = ""
           end
 
           def <<(digit)
             callback = nil
-            logger = Adhearsion::Logging.get_logger(self.class)
             @mutex.synchronize do
               return if @finished.true?
               cancel_initial_timer_locked
               @buffer << digit unless terminating?(digit)
-              match = get_match
-              logger.info "[DTMF:recognizer] Received digit=#{digit.inspect} buffer=#{@buffer.inspect} match_result=#{match.class}"
-              case match
+              case (match = get_match)
               when RubySpeech::GRXML::NoMatch
-                logger.warn "[DTMF:recognizer] NoMatch for buffer=#{@buffer.inspect}"
                 callback = finalize_locked(:nomatch)
               when RubySpeech::GRXML::MaxMatch
-                logger.info "[DTMF:recognizer] MaxMatch utterance=#{match.utterance.inspect} interpretation=#{match.interpretation.inspect}"
                 callback = finalize_locked(:match, match)
               when RubySpeech::GRXML::Match
                 callback = finalize_locked(:match, match) if terminating?(digit)
