@@ -18,9 +18,8 @@ module Adhearsion
           end
 
           def process_dtmf(digit)
+            return unless @recognizer&.alive?
             @recognizer << digit
-          rescue Celluloid::DeadActorError
-            logger.warn 'DTMF digit received into a dead recognizer. Dropping digit.'
           end
 
           def execute_command(command)

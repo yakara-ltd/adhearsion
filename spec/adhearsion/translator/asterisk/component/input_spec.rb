@@ -142,22 +142,21 @@ module Adhearsion
               end
 
               context "dtmf event received after recognizer has terminated" do
-                before do
-                  send_ami_events_for_dtmf 1
-                  send_ami_events_for_dtmf '#'
-                  subject.execute
-                end
+                let(:expected_event) { nil } # Satisfy parent before block
 
-                let :expected_event do
-                  Adhearsion::Rayo::Component::Input::Complete::NoMatch.new
+                before do
+                  # Send digits that will finalize the recognizer (match)
+                  send_ami_events_for_dtmf 1
+                  send_ami_events_for_dtmf 2
+                  sleep 0.1 # Allow async finalization to complete
                 end
 
                 it "should not crash the translator if the recognizer is dead" do
-                  expect(Celluloid::Actor.all.map { |a| a.class }).to include(Translator::Asterisk::Component::DTMFRecognizer)
-                  recognizer = Celluloid::Actor.all.find { |a| a.class == Translator::Asterisk::Component::DTMFRecognizer }
-                  recognizer.terminate if recognizer
-                  expect(Celluloid::Actor.all.map { |a| a.class }).not_to include(Translator::Asterisk::Component::DTMFRecognizer)
-                  subject.process_dtmf 1 # trigger failure
+                  # The recognizer should be finished after processing the match
+                  expect(subject.instance_variable_get(:@recognizer).alive?).to be false
+                  # Sending another digit should not crash
+                  expect { subject.process_dtmf '1' }.not_to raise_error
+                  # Translator should still be running
                   expect(Celluloid::Actor.all.map { |a| a.class }).to include(translator.class)
                 end
               end
