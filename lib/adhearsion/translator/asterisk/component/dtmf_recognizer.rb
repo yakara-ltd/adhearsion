@@ -67,6 +67,23 @@ module Adhearsion
             begin_initial_timer @initial_timeout/1000 unless @initial_timeout == -1
           end
 
+          # Called via async from timer callbacks to allow pending digit messages
+          # to be processed first (they'll be ahead in the mailbox queue)
+          def finalize_from_timer(match_type, match = nil)
+            return if @finished
+            finalize match_type, match
+          end
+
+          def finalize_inter_digit_timeout
+            return if @finished
+            case (match = get_match)
+            when RubySpeech::GRXML::Match
+              finalize :match, match
+            else
+              finalize :nomatch
+            end
+          end
+
           private
 
           def terminating?(digit)
@@ -90,7 +107,7 @@ module Adhearsion
           def begin_initial_timer(timeout)
             @initial_timer = after timeout do
               next if @finished
-              finalize :noinput
+              async.finalize_from_timer :noinput
             end
           end
 
@@ -105,12 +122,7 @@ module Adhearsion
             @inter_digit_timer ||= begin
               after @inter_digit_timeout/1000 do
                 next if @finished
-                case (match = get_match)
-                when RubySpeech::GRXML::Match
-                  finalize :match, match
-                else
-                  finalize :nomatch
-                end
+                async.finalize_inter_digit_timeout
               end
             end
             @inter_digit_timer.reset
