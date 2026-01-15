@@ -47,6 +47,7 @@ module Adhearsion
           end
 
           def <<(digit)
+            return if @finished
             cancel_initial_timer
             @buffer << digit unless terminating?(digit)
             case (match = get_match)
@@ -88,6 +89,7 @@ module Adhearsion
 
           def begin_initial_timer(timeout)
             @initial_timer = after timeout do
+              next if @finished
               finalize :noinput
             end
           end
@@ -102,6 +104,7 @@ module Adhearsion
             return if @inter_digit_timeout == -1
             @inter_digit_timer ||= begin
               after @inter_digit_timeout/1000 do
+                next if @finished
                 case (match = get_match)
                 when RubySpeech::GRXML::Match
                   finalize :match, match
