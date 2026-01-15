@@ -186,7 +186,7 @@ module Adhearsion
           before { dial_command.request! }
 
           it 'sends an Originate AMI action' do
-              expect(ami_client).to receive(:send_action).once.with('Originate',
+              expect(ami_client).to receive(:send_action).once.with('Originate', {
                 'Async'       => true,
                 'Context'     => REDIRECT_CONTEXT,
                 'Exten'       => REDIRECT_EXTENSION,
@@ -194,7 +194,7 @@ module Adhearsion
                 'Channel'     => 'SIP/1234',
                 'Callerid'    => 'sip:foo@bar.com',
                 'Variable'    => "adhearsion_call_id=#{subject.id}"
-              ).and_return RubyAMI::Response.new
+              }).and_return RubyAMI::Response.new
 
               subject.dial dial_command
               sleep 0.1
@@ -204,7 +204,7 @@ module Adhearsion
             let(:to)  { 'Jane Smith <SIP/5678>' }
 
             it 'sends an Originate AMI action with only the channel' do
-              expect(ami_client).to receive(:send_action).once.with('Originate',
+              expect(ami_client).to receive(:send_action).once.with('Originate', {
                 'Async'       => true,
                 'Context'     => REDIRECT_CONTEXT,
                 'Exten'       => REDIRECT_EXTENSION,
@@ -212,7 +212,7 @@ module Adhearsion
                 'Channel'     => 'SIP/5678',
                 'Callerid'    => 'sip:foo@bar.com',
                 'Variable'    => "adhearsion_call_id=#{subject.id}"
-              ).and_return RubyAMI::Response.new
+              }).and_return RubyAMI::Response.new
 
               subject.dial dial_command
               sleep 0.1
@@ -225,7 +225,7 @@ module Adhearsion
             end
 
             it 'includes the timeout in the Originate AMI action' do
-              expect(ami_client).to receive(:send_action).once.with('Originate',
+              expect(ami_client).to receive(:send_action).once.with('Originate', {
                 'Async'       => true,
                 'Context'     => REDIRECT_CONTEXT,
                 'Exten'       => REDIRECT_EXTENSION,
@@ -234,7 +234,7 @@ module Adhearsion
                 'Callerid'    => 'sip:foo@bar.com',
                 'Variable'    => "adhearsion_call_id=#{subject.id}",
                 'Timeout'     => 10000
-              ).and_return RubyAMI::Response.new
+              }).and_return RubyAMI::Response.new
 
               subject.dial dial_command
               sleep 0.1
@@ -247,7 +247,7 @@ module Adhearsion
             end
 
             it 'includes the headers in the Originate AMI action' do
-              expect(ami_client).to receive(:send_action).once.with('Originate',
+              expect(ami_client).to receive(:send_action).once.with('Originate', {
                 'Async'       => true,
                 'Context'     => REDIRECT_CONTEXT,
                 'Exten'       => REDIRECT_EXTENSION,
@@ -255,7 +255,7 @@ module Adhearsion
                 'Channel'     => 'SIP/1234',
                 'Callerid'    => 'sip:foo@bar.com',
                 'Variable'    => "adhearsion_call_id=#{subject.id},SIPADDHEADER51=\"X-foo: bar\",SIPADDHEADER52=\"X-doo: dah\""
-              ).and_return RubyAMI::Response.new
+              }).and_return RubyAMI::Response.new
 
               subject.dial dial_command
               sleep 0.1
@@ -1473,7 +1473,7 @@ module Adhearsion
 
             it "with a :decline reason should send a Hangup AMI command (cause 21) and set the command's response" do
               command.reason = :decline
-              expect(ami_client).to receive(:send_action).once.with('Hangup', 'Channel' => channel, 'Cause' => 21).and_return RubyAMI::Response.new
+              expect(ami_client).to receive(:send_action).once.with('Hangup', {'Channel' => channel, 'Cause' => 21}).and_return RubyAMI::Response.new
               subject.execute_command command
               expect(command.response(0.5)).to be true
             end
@@ -1553,7 +1553,7 @@ module Adhearsion
             let(:command) { Adhearsion::Rayo::Command::Hangup.new }
 
             it "should send a Hangup AMI command and set the command's response" do
-              expect(ami_client).to receive(:send_action).once.with('Hangup', 'Channel' => channel, 'Cause' => 16).and_return RubyAMI::Response.new
+              expect(ami_client).to receive(:send_action).once.with('Hangup', {'Channel' => channel, 'Cause' => 16}).and_return RubyAMI::Response.new
               subject.execute_command command
               expect(command.response(0.5)).to be true
             end
@@ -1696,12 +1696,12 @@ module Adhearsion
             it "executes the unjoin through redirection" do
               expect(translator).to receive(:call_with_id).with(other_call_id).and_return(nil)
 
-              expect(ami_client).to receive(:send_action).once.with("Redirect",
+              expect(ami_client).to receive(:send_action).once.with("Redirect", {
                 'Channel'   => channel,
                 'Exten'     => Translator::Asterisk::REDIRECT_EXTENSION,
                 'Priority'  => Translator::Asterisk::REDIRECT_PRIORITY,
                 'Context'   => Translator::Asterisk::REDIRECT_CONTEXT,
-              ).and_return RubyAMI::Response.new
+              }).and_return RubyAMI::Response.new
 
               subject.execute_command command
 
@@ -1711,7 +1711,7 @@ module Adhearsion
             it "executes the unjoin through redirection, on the subject call and the other call" do
               expect(translator).to receive(:call_with_id).with(other_call_id).and_return(other_call)
 
-              expect(ami_client).to receive(:send_action).once.with("Redirect",
+              expect(ami_client).to receive(:send_action).once.with("Redirect", {
                 'Channel'       => channel,
                 'Exten'         => Translator::Asterisk::REDIRECT_EXTENSION,
                 'Priority'      => Translator::Asterisk::REDIRECT_PRIORITY,
@@ -1720,7 +1720,7 @@ module Adhearsion
                 'ExtraExten'    => Translator::Asterisk::REDIRECT_EXTENSION,
                 'ExtraPriority' => Translator::Asterisk::REDIRECT_PRIORITY,
                 'ExtraContext'  => Translator::Asterisk::REDIRECT_CONTEXT
-              ).and_return RubyAMI::Response.new
+              }).and_return RubyAMI::Response.new
 
               subject.execute_command command
             end
@@ -2029,7 +2029,7 @@ module Adhearsion
               end
 
               it 'should send an appropriate AsyncAGI AMI action' do
-                expect(ami_client).to receive(:send_action).once.with('AGI', 'Channel' => channel, 'Command' => 'EXEC ANSWER', 'CommandID' => Adhearsion.new_uuid).and_return(response)
+                expect(ami_client).to receive(:send_action).once.with('AGI', {'Channel' => channel, 'Command' => 'EXEC ANSWER', 'CommandID' => Adhearsion.new_uuid}).and_return(response)
                 fut = Celluloid::Future.new { subject.execute_agi_command 'EXEC ANSWER' }
                 sleep 0.25
                 subject.process_ami_event ami_event
@@ -2039,7 +2039,7 @@ module Adhearsion
                 let(:params) { [1000, 'foo'] }
 
                 it 'should send the appropriate action' do
-                  expect(ami_client).to receive(:send_action).once.with('AGI', 'Channel' => channel, 'Command' => 'WAIT FOR DIGIT "1000" "foo"', 'CommandID' => Adhearsion.new_uuid).and_return(response)
+                  expect(ami_client).to receive(:send_action).once.with('AGI', {'Channel' => channel, 'Command' => 'WAIT FOR DIGIT "1000" "foo"', 'CommandID' => Adhearsion.new_uuid}).and_return(response)
                   fut = Celluloid::Future.new { subject.execute_agi_command 'WAIT FOR DIGIT', *params }
                   sleep 0.25
                   subject.process_ami_event ami_event
@@ -2066,7 +2066,7 @@ module Adhearsion
               end
 
               it 'should send an appropriate AsyncAGI AMI action' do
-                expect(ami_client).to receive(:send_action).once.with('AGI', 'Channel' => channel, 'Command' => 'EXEC ANSWER', 'CommandID' => Adhearsion.new_uuid).and_return(response)
+                expect(ami_client).to receive(:send_action).once.with('AGI', {'Channel' => channel, 'Command' => 'EXEC ANSWER', 'CommandID' => Adhearsion.new_uuid}).and_return(response)
                 fut = Celluloid::Future.new { subject.execute_agi_command 'EXEC ANSWER' }
                 sleep 0.25
                 subject.process_ami_event ami_event
@@ -2076,7 +2076,7 @@ module Adhearsion
                 let(:params) { [1000, 'foo'] }
 
                 it 'should send the appropriate action' do
-                  expect(ami_client).to receive(:send_action).once.with('AGI', 'Channel' => channel, 'Command' => 'WAIT FOR DIGIT "1000" "foo"', 'CommandID' => Adhearsion.new_uuid).and_return(response)
+                  expect(ami_client).to receive(:send_action).once.with('AGI', {'Channel' => channel, 'Command' => 'WAIT FOR DIGIT "1000" "foo"', 'CommandID' => Adhearsion.new_uuid}).and_return(response)
                   fut = Celluloid::Future.new { subject.execute_agi_command 'WAIT FOR DIGIT', *params }
                   sleep 0.25
                   subject.process_ami_event ami_event
@@ -2101,16 +2101,17 @@ module Adhearsion
           end
 
           it "executes the proper AMI action with only the subject call" do
-            expect(ami_client).to receive(:send_action).once.with 'Redirect',
+            expect(ami_client).to receive(:send_action).once.with 'Redirect', {
               'Exten'     => Translator::Asterisk::REDIRECT_EXTENSION,
               'Priority'  => Translator::Asterisk::REDIRECT_PRIORITY,
               'Context'   => Translator::Asterisk::REDIRECT_CONTEXT,
               'Channel'   => channel
+            }
             subject.redirect_back
           end
 
           it "executes the proper AMI action with another call specified" do
-            expect(ami_client).to receive(:send_action).once.with 'Redirect',
+            expect(ami_client).to receive(:send_action).once.with 'Redirect', {
               'Channel'       => channel,
               'Exten'         => Translator::Asterisk::REDIRECT_EXTENSION,
               'Priority'      => Translator::Asterisk::REDIRECT_PRIORITY,
@@ -2119,6 +2120,7 @@ module Adhearsion
               'ExtraExten'    => Translator::Asterisk::REDIRECT_EXTENSION,
               'ExtraPriority' => Translator::Asterisk::REDIRECT_PRIORITY,
               'ExtraContext'  => Translator::Asterisk::REDIRECT_CONTEXT
+            }
             subject.redirect_back other_call
           end
         end

@@ -107,11 +107,11 @@ describe Adhearsion::Rayo::Client do
     let(:event)     { Adhearsion::Event::Complete.new }
 
     before do
-      expect(connection).to receive(:write).once.with component, :call_id => call_id
+      expect(connection).to receive(:write).once.with component, {call_id: call_id}
     end
 
     let :execute_command do
-      subject.execute_command component, :call_id => call_id
+      subject.execute_command component, call_id: call_id
     end
 
     it 'should write the command to the connection' do

@@ -937,7 +937,7 @@ module Adhearsion
 
       it "should send a message with the given subject" do
         expect(subject.wrapped_object).to receive(:client).once.and_return mock_client
-        expect(mock_client).to receive(:send_message).once.with(subject.id, subject.domain, nil, :subject => "Important Message")
+        expect(mock_client).to receive(:send_message).once.with(subject.id, subject.domain, nil, {subject: "Important Message"})
         subject.send_message nil, :subject => "Important Message"
       end
     end

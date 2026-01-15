@@ -109,7 +109,7 @@ describe Adhearsion::Rayo::Initializer do
   end
 
   it "starts the client with any overridden settings" do
-    expect(Adhearsion::Rayo::Connection::XMPP).to receive(:new).once.with(username: 'userb@127.0.0.1/foo', password: '123', host: 'foo.bar.com', port: 200, certs: '/foo/bar', connection_timeout: 20, root_domain: 'foo.com').and_return mock_client
+    expect(Adhearsion::Rayo::Connection::XMPP).to receive(:new).once.with({username: 'userb@127.0.0.1/foo', password: '123', host: 'foo.bar.com', port: 200, certs: '/foo/bar', connection_timeout: 20, root_domain: 'foo.com'}).and_return mock_client
     initialize_rayo username: 'userb@127.0.0.1/foo', password: '123', host: 'foo.bar.com', port: 200, certs_directory: '/foo/bar', connection_timeout: 20, root_domain: 'foo.com'
   end
 

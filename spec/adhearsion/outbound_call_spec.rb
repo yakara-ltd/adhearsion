@@ -58,7 +58,7 @@ module Adhearsion
       end
 
       it "should dial the call to the correct endpoint and return it" do
-        expect(mock_call.wrapped_object).to receive(:dial).with(to, :from => 'foo').once
+        expect(mock_call.wrapped_object).to receive(:dial).with(to, {from: 'foo'}).once
         expect(OutboundCall.originate(to, :from => 'foo')).to be mock_call
       end
 
