@@ -95,12 +95,16 @@ module Adhearsion
       #     end
       #
       def tasks(&block)
-        @@rake_tasks << Proc.new(&block) if block_given?
-        @@rake_tasks
+        @@rake_tasks_mutex.synchronize do
+          @@rake_tasks << Proc.new(&block) if block_given?
+          @@rake_tasks.dup
+        end
       end
 
       def reset_rake_tasks
-        @@rake_tasks = []
+        @@rake_tasks_mutex.synchronize do
+          @@rake_tasks = []
+        end
       end
 
       def load_tasks
@@ -246,6 +250,7 @@ module Adhearsion
       end
     end
 
+    @@rake_tasks_mutex = Mutex.new
     reset_rake_tasks
 
     [:plugin_name, :plugin_name=].each do |method|
