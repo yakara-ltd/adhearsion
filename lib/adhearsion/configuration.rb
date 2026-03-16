@@ -123,7 +123,7 @@ module Adhearsion
         desc "HTTP server"
         http do
           enable true, desc: "Enable or disable the HTTP server"
-          host "0.0.0.0", desc: "IP to bind the HTTP listener to"
+          host "127.0.0.1", desc: "IP to bind the HTTP listener to"
           port "8080", desc: "Port to bind the HTTP listener to"
           rackup 'config.ru', desc: 'Path to Rack configuration file (relative to Adhearsion application root)'
         end
