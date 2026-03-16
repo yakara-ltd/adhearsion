@@ -256,7 +256,7 @@ module Adhearsion
             end
             command.response = true
           when Adhearsion::Rayo::Command::Redirect
-            execute_agi_command 'EXEC Transfer', command.to
+            execute_agi_command 'EXEC Transfer', sanitize_transfer_target(command.to)
             status = channel_var 'TRANSFERSTATUS'
             command.response = case status
             when 'SUCCESS'
@@ -418,6 +418,10 @@ module Adhearsion
 
         def sanitize_header_value(str)
           str.gsub(/[\r\n\0"\\]/, '')
+        end
+
+        def sanitize_transfer_target(target)
+          target.to_s.gsub(/[\r\n\0&|`$]/, '')
         end
       end
     end
