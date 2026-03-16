@@ -251,6 +251,78 @@ custom credentials.
 
 ---
 
+---
+
+### HIGH #16: Unbounded DTMF Grammar Cache (Memory Exhaustion DoS)
+
+**File:** `lib/adhearsion/translator/asterisk/component/dtmf_recognizer.rb`
+**Status:** Fixed (commit ba0357f4)
+
+**Issue:** The `BuiltinMatcherCache` singleton stored parsed grammars keyed by URL
+with no size limit or eviction policy. An attacker sending input commands with many
+unique grammar URLs could exhaust heap memory indefinitely.
+
+**Fix:** Added `MAX_CACHE_SIZE = 100` constant and LRU-style eviction via
+`Hash#shift` when the cache reaches capacity.
+
+**Test:** `spec/adhearsion/translator/asterisk/dtmf_recognizer_cache_security_spec.rb`
+— verifies `MAX_CACHE_SIZE` constant exists and eviction logic is present.
+
+---
+
+### HIGH #17: Bare `rescue` in `send_message` (Silent Exception Swallowing)
+
+**File:** `lib/adhearsion/translator/asterisk/call.rb`
+**Status:** Fixed (commit c9bf21a7)
+
+**Issue:** `send_message` used a bare `rescue` (no exception class), silently
+swallowing all exceptions including `Celluloid::DeadActorError`, `SystemExit`,
+and network failures. This masked bugs, attack signals, and delivery failures.
+
+**Fix:** Replaced bare `rescue` with `rescue RubyAMI::Error, ChannelGoneError => e`
+and added a `logger.warn` so failures are visible in logs.
+
+**Test:** `spec/adhearsion/translator/asterisk/call_send_message_security_spec.rb`
+— source-level scan verifying no bare `rescue` statements remain.
+
+---
+
+### HIGH #18: SIP Header Injection via `variable_for_headers`
+
+**File:** `lib/adhearsion/translator/asterisk/call.rb`
+**Status:** Fixed (commit 7aa1adb7)
+
+**Issue:** Header names and values were interpolated directly into `SIPADDHEADER`
+variable strings without escaping. Quotes, newlines, and null bytes in
+attacker-controlled header values could inject arbitrary SIP headers or break
+out of the AMI variable context.
+
+**Fix:** Added `sanitize_header_value` method that strips `\r`, `\n`, `\0`, `"`,
+and `\` characters from all header names and values before interpolation.
+
+**Test:** `spec/adhearsion/translator/asterisk/call_header_injection_security_spec.rb`
+— source-level scan verifying header interpolation uses sanitization.
+
+---
+
+### HIGH #19: Path Traversal in Audio File Playback
+
+**File:** `lib/adhearsion/translator/asterisk/component/output.rb`
+**Status:** Fixed (commit 5c3c5c5a)
+
+**Issue:** `path_for_audio_node` constructed file paths from SSML `<audio src="...">`
+attributes without validating for directory traversal. An attacker could use
+`<audio src="file://../../etc/passwd"/>` to reference files outside the intended
+audio directory.
+
+**Fix:** Added `path_traversal?` check that raises `OptionError` if the path
+contains `..` or null byte sequences.
+
+**Test:** `spec/adhearsion/translator/asterisk/component/output_path_traversal_security_spec.rb`
+— source-level scan verifying traversal validation is present.
+
+---
+
 ## Summary
 
 | # | Severity | Issue | Status |
@@ -270,8 +342,12 @@ custom credentials.
 | 13 | MEDIUM | Process.method_missing uses .send | Fixed |
 | 14 | LOW | ERB template with unrestricted binding | Fixed |
 | 15 | HIGH | Default credentials not blocked in production | Fixed |
+| 16 | HIGH | Unbounded DTMF grammar cache (memory DoS) | Fixed |
+| 17 | HIGH | Bare rescue silences all errors | Fixed |
+| 18 | HIGH | SIP header injection via unescaped interpolation | Fixed |
+| 19 | HIGH | Path traversal in audio file playback | Fixed |
 
-All 15 fixes include regression tests (29 test examples total).
+All 19 fixes include regression tests (35 test examples total).
 
 Run the full security test suite with:
 
@@ -289,5 +365,9 @@ bundle exec rspec \
   spec/adhearsion/tls_security_spec.rb \
   spec/adhearsion/process_security_spec.rb \
   spec/adhearsion/generators/generator_security_spec.rb \
-  spec/adhearsion/default_credentials_enforcement_spec.rb
+  spec/adhearsion/default_credentials_enforcement_spec.rb \
+  spec/adhearsion/translator/asterisk/dtmf_recognizer_cache_security_spec.rb \
+  spec/adhearsion/translator/asterisk/call_send_message_security_spec.rb \
+  spec/adhearsion/translator/asterisk/call_header_injection_security_spec.rb \
+  spec/adhearsion/translator/asterisk/component/output_path_traversal_security_spec.rb
 ```
