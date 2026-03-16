@@ -47,8 +47,8 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'thor', "~> 1.0"
   s.add_runtime_dependency 'virtus', ["~> 2.0"]
 
-  s.add_development_dependency 'aruba', "~> 0.14.0"
-  s.add_development_dependency 'cucumber', "~> 8.0"
+  s.add_development_dependency 'aruba', "~> 2.3"
+  s.add_development_dependency 'cucumber', "~> 10.0"
   s.add_development_dependency 'guard-cucumber'
   s.add_development_dependency 'guard-rspec'
   s.add_development_dependency 'rspec', ["~> 3.8"]
