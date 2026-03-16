@@ -52,13 +52,21 @@ module Adhearsion
 
       def get_rubygem_vals
         ENV['RUBYGEM_NAME'] ||= ask "What's the rubygem name?"
-        ENV['RUBYGEM_AUTH'] ||= ask "What's your authorization key for Rubygems?"
+        ENV['RUBYGEM_AUTH'] ||= ask_secret "What's your authorization key for Rubygems?"
       end
 
       def get_github_vals
         ENV['GITHUB_USERNAME'] ||= ask "What's your github username?"
-        ENV['GITHUB_PASSWORD'] ||= ask "What's your github password?"
+        ENV['GITHUB_TOKEN']    ||= ask_secret "What's your GitHub personal access token?"
         ENV['GITHUB_REPO']     ||= ask "Please enter the owner and repo (for example, 'adhearsion/new-plugin'): "
+      end
+
+      def ask_secret(prompt)
+        require 'io/console'
+        $stdout.print "#{prompt} "
+        $stdin.noecho(&:gets).chomp
+      ensure
+        $stdout.puts
       end
 
       def github_repo_owner
@@ -75,7 +83,7 @@ module Adhearsion
         uri = URI("https://api.github.com/repos/#{github_repo_owner}/#{github_repo_name}/hooks")
         req = Net::HTTP::Post.new(uri.to_s)
 
-        req.basic_auth ENV['GITHUB_USERNAME'], ENV['GITHUB_PASSWORD']
+        req["Authorization"] = "token #{ENV['GITHUB_TOKEN']}"
         req.body = {
           name:   "web",
           active: true,
