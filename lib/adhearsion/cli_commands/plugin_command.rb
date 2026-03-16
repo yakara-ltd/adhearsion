@@ -26,10 +26,20 @@ module Adhearsion
       def create_rubygem_hook
         get_rubygem_vals
 
-        puts `curl -H 'Authorization:#{ENV['RUBYGEM_AUTH']}' \
-        -F 'gem_name=#{ENV['RUBYGEM_NAME']}' \
-        -F 'url=http://www.ahnhub.com/gem' \
-        https://rubygems.org/api/v1/web_hooks/fire`
+        require 'net/http'
+
+        uri = URI("https://rubygems.org/api/v1/web_hooks/fire")
+        req = Net::HTTP::Post.new(uri)
+        req["Authorization"] = ENV['RUBYGEM_AUTH']
+        req.set_form_data(
+          'gem_name' => ENV['RUBYGEM_NAME'],
+          'url'      => 'https://www.ahnhub.com/gem'
+        )
+
+        Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+          response = http.request(req)
+          puts response.body
+        end
       end
 
       desc "create_ahnhub_hooks", "Creates ahnhub hooks for both a rubygem and github repo"
@@ -70,7 +80,7 @@ module Adhearsion
           name:   "web",
           active: true,
           events: ["push", "pull_request"],
-          config: {url: "http://ahnhub.com/github"}
+          config: {url: "https://ahnhub.com/github"}
         }.to_json
 
         req["content-type"] = "application/json"
