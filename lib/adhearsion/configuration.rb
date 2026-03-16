@@ -10,12 +10,25 @@ module Adhearsion
     DEFAULT_USERNAME = "usera@127.0.0.1".freeze
     DEFAULT_PASSWORD = "1".freeze
 
+    attr_reader :active_environment
+
     def self.warn_if_default_credentials!(config)
       logger = Adhearsion::Logging.get_logger(self)
       if config.core.username == DEFAULT_USERNAME || config.core.password == DEFAULT_PASSWORD
         logger.warn "Default credentials detected! Your system is using insecure " \
           "default credentials (username: '#{DEFAULT_USERNAME}', password: '#{DEFAULT_PASSWORD}'). " \
           "Please update config.core.username and config.core.password before deploying to production."
+      end
+    end
+
+    def self.enforce_security!(config)
+      has_default_creds = config.core.username == DEFAULT_USERNAME || config.core.password == DEFAULT_PASSWORD
+
+      if has_default_creds && config.active_environment == :production
+        raise ConfigurationError, "Default credentials are not allowed in production! " \
+          "Please set config.core.username and config.core.password to real values."
+      elsif has_default_creds
+        warn_if_default_credentials!(config)
       end
     end
 
