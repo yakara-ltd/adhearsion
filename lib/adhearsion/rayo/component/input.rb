@@ -167,7 +167,7 @@ module Adhearsion
             def result_node(xml)
               directly_nested = xml.at_xpath 'ns:result', ns: NLSML_NAMESPACE
               return directly_nested if directly_nested
-              document = Nokogiri::XML.parse xml.text, nil, nil, Nokogiri::XML::ParseOptions::NOBLANKS
+              document = Nokogiri::XML.parse xml.text, nil, nil, Nokogiri::XML::ParseOptions::NOBLANKS | Nokogiri::XML::ParseOptions::NONET
               document.at_xpath 'ns:result', ns: NLSML_NAMESPACE or raise "Couldn't find the NLSML node"
             end
           end
