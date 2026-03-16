@@ -128,6 +128,19 @@ module Adhearsion
       defined? JRUBY_VERSION
     end
 
+    def interact_with_call(call)
+      Pry.prompt = [ proc { "AHN<#{call.id}> " },
+                     proc { "AHN<#{call.id}? " }  ]
+
+      begin
+        call.pause_controllers
+        CallController.exec InteractiveController.new(call)
+      ensure
+        logger.debug "Restoring control of call to controllers"
+        call.resume_controllers
+      end
+    end
+
     private
 
     def set_prompt
@@ -141,19 +154,6 @@ module Adhearsion
                   "AHN#{'  ' * nest_level}? "
                 end
               ]
-    end
-
-    def interact_with_call(call)
-      Pry.prompt = [ proc { "AHN<#{call.id}> " },
-                     proc { "AHN<#{call.id}? " }  ]
-
-      begin
-        call.pause_controllers
-        CallController.exec InteractiveController.new(call)
-      ensure
-        logger.debug "Restoring control of call to controllers"
-        call.resume_controllers
-      end
     end
 
     class InteractiveController < CallController
