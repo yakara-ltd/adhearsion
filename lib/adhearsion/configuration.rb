@@ -19,6 +19,14 @@ module Adhearsion
       end
     end
 
+    def self.warn_if_no_tls!(config)
+      logger = Adhearsion::Logging.get_logger(self)
+      if config.core.certs_directory.nil?
+        logger.warn "TLS not configured! Connection to the telephony server will be unencrypted. " \
+          "Set config.core.certs_directory to a directory containing TLS certificates to enable secure connections."
+      end
+    end
+
     def self.validate_number(value)
       return 1.0/0.0 if ["Infinity", 1.0/0.0].include? value
       value.to_i

@@ -15,6 +15,7 @@ module Adhearsion
           self.config = Adhearsion.config.core
 
           Adhearsion::Configuration.warn_if_default_credentials!(Adhearsion.config)
+          Adhearsion::Configuration.warn_if_no_tls!(Adhearsion.config)
 
           username = self.config.username
           if (self.config.type || :xmpp) == :xmpp
