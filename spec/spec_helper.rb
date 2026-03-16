@@ -42,6 +42,7 @@ RSpec.configure do |config|
   config.before :suite do
     Adhearsion::Logging.start :trace, Adhearsion.config.core.logging.formatter
     Adhearsion.config.core.after_hangup_lifetime = 10
+    Celluloid.shutdown_timeout = 1
     Adhearsion::Initializer.new.initialize_exception_logger
   end
 
@@ -57,10 +58,36 @@ RSpec.configure do |config|
   config.after :each do
     Timecop.return
     Adhearsion::Events.clear
-    if defined?(:Celluloid)
-      Celluloid.shutdown
+    if defined?(Celluloid)
+      # Terminate call actors without full Celluloid shutdown/boot cycle
+      # (shutdown/boot recreates threads per test which is very slow)
+      begin
+        calls = Adhearsion.instance_variable_get(:@active_calls)
+        if calls
+          calls.values.each do |call|
+            call.terminate if call.alive?
+          rescue Celluloid::DeadActorError, NoMethodError
+          end
+        end
+      rescue => e
+        # Ignore cleanup errors
+      end
       Adhearsion.active_calls = nil
-      Celluloid.boot
+
+      # Clean up supervised actors (e.g. :statistics) from the registry
+      begin
+        if Celluloid::Actor[:statistics]
+          Celluloid::Actor[:statistics].terminate
+        end
+      rescue Celluloid::DeadActorError, NoMethodError
+      end
+
+      # If the supervision tree is corrupted, do a full reboot
+      services_alive = begin; Celluloid.services; rescue; nil; end
+      unless services_alive
+        Celluloid.shutdown
+        Celluloid.boot
+      end
     end
   end
 end
