@@ -128,6 +128,7 @@ module Adhearsion
 
           def path_for_audio_node(node)
             path = node.src.sub('file://', '')
+            raise OptionError, "Invalid audio path: directory traversal detected" if path_traversal?(path)
             dir = File.dirname(path)
             basename = File.basename(path, '.*')
             if dir == '.'
@@ -135,6 +136,10 @@ module Adhearsion
             else
               File.join(dir, basename)
             end
+          end
+
+          def path_traversal?(path)
+            path.include?('..') || path.include?("\0")
           end
 
           def filenames(doc, check_audio_only_policy = -> {})
