@@ -195,13 +195,69 @@ when certs_directory is nil and suppressed when configured.
 
 ---
 
+---
+
+### MEDIUM #13: `Process.method_missing` Uses `.send` Instead of `.public_send`
+
+**File:** `lib/adhearsion/process.rb`
+**Status:** Fixed (commit 60ebea1f)
+
+**Issue:** The `Process` singleton proxy used `.send` in `method_missing`, which
+allows callers to invoke private methods (like `die_now!`) through the class-level
+proxy. This was missed during the original fix in #8.
+
+**Fix:** Replaced `.send` with `.public_send` to respect method visibility.
+Also added `Process` to the existing `method_missing_security_spec.rb` coverage.
+
+**Test:** `spec/adhearsion/process_security_spec.rb` — source-level scan verifying
+no `.send` calls remain, plus behavioral test for private method protection.
+
+---
+
+### LOW #14: ERB Template Evaluation with Unrestricted `binding`
+
+**File:** `lib/adhearsion/generators/generator.rb`
+**Status:** Fixed (commit 98090bed)
+
+**Issue:** `ERB.new(File.read(usage)).result(binding)` exposed the full class
+context to USAGE templates. A malicious or compromised template file could
+execute arbitrary code with access to the generator's class internals.
+
+**Fix:** Replaced `binding` with `TOPLEVEL_BINDING.dup` to provide a clean,
+restricted evaluation context with no access to class internals.
+
+**Test:** `spec/adhearsion/generators/generator_security_spec.rb` — source-level
+scan verifying no `.result(binding)` calls remain.
+
+---
+
+### HIGH #15: Default Credentials Only Warned, Not Blocked in Production
+
+**Files:** `lib/adhearsion/configuration.rb`, `lib/adhearsion/rayo/initializer.rb`
+**Status:** Fixed (commit 16bda59a)
+
+**Issue:** Default credentials (`usera@127.0.0.1` / `1`) only generated a log
+warning at startup, allowing production systems to run with effectively
+unauthenticated connections.
+
+**Fix:** Added `Configuration.enforce_security!` which raises a
+`ConfigurationError` in production environment when default credentials are
+detected. Development and other environments continue to receive warnings only.
+Wired into `Rayo::Initializer.init` replacing `warn_if_default_credentials!`.
+
+**Test:** `spec/adhearsion/default_credentials_enforcement_spec.rb` — verifies
+hard failure in production, warning-only in development, and no error with
+custom credentials.
+
+---
+
 ## Summary
 
 | # | Severity | Issue | Status |
 |---|----------|-------|--------|
 | 1 | CRITICAL | Shell injection via backticks | Fixed |
 | 2 | CRITICAL | Unsafe YAML.load deserialization | Fixed |
-| 3 | HIGH | Hardcoded default credentials | Fixed |
+| 3 | HIGH | Hardcoded default credentials (warning) | Fixed |
 | 4 | HIGH | HTTP server bound to 0.0.0.0 | Fixed |
 | 5 | HIGH | Plaintext password prompts | Fixed |
 | 6 | HIGH | GitHub basic auth + HTTP URLs | Fixed |
@@ -211,8 +267,11 @@ when certs_directory is nil and suppressed when configured.
 | 10 | MEDIUM | Nokogiri NONET flag missing | Fixed |
 | 11 | LOW | Thread safety with class variables | Fixed |
 | 12 | LOW | No TLS enforcement by default | Fixed |
+| 13 | MEDIUM | Process.method_missing uses .send | Fixed |
+| 14 | LOW | ERB template with unrestricted binding | Fixed |
+| 15 | HIGH | Default credentials not blocked in production | Fixed |
 
-All 12 fixes include regression tests (23 test examples total).
+All 15 fixes include regression tests (29 test examples total).
 
 Run the full security test suite with:
 
@@ -227,5 +286,8 @@ bundle exec rspec \
   spec/adhearsion/log_redaction_security_spec.rb \
   spec/adhearsion/nokogiri_security_spec.rb \
   spec/adhearsion/plugin_thread_safety_spec.rb \
-  spec/adhearsion/tls_security_spec.rb
+  spec/adhearsion/tls_security_spec.rb \
+  spec/adhearsion/process_security_spec.rb \
+  spec/adhearsion/generators/generator_security_spec.rb \
+  spec/adhearsion/default_credentials_enforcement_spec.rb
 ```
