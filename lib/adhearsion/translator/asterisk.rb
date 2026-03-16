@@ -24,6 +24,8 @@ module Adhearsion
 
       EVENTS_ALLOWED_BRIDGED = %w{AGIExec AsyncAGI}
 
+      MAX_BRIDGE_CACHE_SIZE = 500
+
       trap_exit :actor_died
 
       # Set the AMI event filter to be applied to incoming AMI events. A truthy return value will send the event via Rayo to the client (Adhearsion).
@@ -64,6 +66,11 @@ module Adhearsion
 
       def call_for_channel(channel)
         call_with_id @channel_to_call_id[Channel.new(channel).name]
+      end
+
+      def register_bridge(key, channel)
+        @bridges.shift if @bridges.size >= MAX_BRIDGE_CACHE_SIZE
+        @bridges[key] = channel
       end
 
       def register_component(component)

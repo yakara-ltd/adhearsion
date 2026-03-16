@@ -151,7 +151,7 @@ module Adhearsion
                 translator.handle_pb_event other_call_event
               end
             else
-              translator.bridges[ami_event['BridgeUniqueid']] = ami_event['Channel']
+              translator.register_bridge(ami_event['BridgeUniqueid'], ami_event['Channel'])
             end
            when 'BridgeLeave'
             if other_call_channel = translator.bridges.delete(ami_event['BridgeUniqueid'] + '_leave')
@@ -164,7 +164,7 @@ module Adhearsion
                 translator.handle_pb_event other_call_event
               end
             else
-              translator.bridges[ami_event['BridgeUniqueid'] + '_leave'] = ami_event['Channel']
+              translator.register_bridge(ami_event['BridgeUniqueid'] + '_leave', ami_event['Channel'])
             end
           when 'OriginateResponse'
             if ami_event['Response'] == 'Failure' && ami_event['Uniqueid'] == '<null>'
