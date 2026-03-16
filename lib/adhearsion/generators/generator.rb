@@ -31,7 +31,7 @@ module Adhearsion
         usage = source_root && File.expand_path("../USAGE", source_root)
 
         @desc ||= if usage && File.exist?(usage)
-          ERB.new(File.read(usage)).result(binding)
+          ERB.new(File.read(usage)).result(TOPLEVEL_BINDING.dup)
         else
           "#{generator_name} [#{arguments.drop(2).map(&:name).join(', ')}]: #{short_desc}."
         end
