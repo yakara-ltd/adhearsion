@@ -73,7 +73,7 @@ module Adhearsion
                      :exten       => REDIRECT_EXTENSION,
                      :priority    => REDIRECT_PRIORITY,
                      :channel     => channel,
-                     :callerid    => dial_command.from
+                     :callerid    => sanitize_header_value(dial_command.from.to_s)
                    }
           params[:variable] = variable_for_headers dial_command.headers
           params[:timeout] = dial_command.timeout unless dial_command.timeout.nil?
