@@ -40,8 +40,11 @@ module Adhearsion
           end
         end
 
+        ALLOWED_URI_SCHEMES = %w[http https file].freeze
+
         def uri?(string)
-          !! URI.parse(string).scheme
+          scheme = URI.parse(string).scheme
+          scheme && ALLOWED_URI_SCHEMES.include?(scheme.downcase)
         rescue URI::BadURIError, URI::InvalidURIError
           false
         end
