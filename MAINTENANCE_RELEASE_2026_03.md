@@ -323,6 +323,118 @@ contains `..` or null byte sequences.
 
 ---
 
+---
+
+### MEDIUM #20: Unvalidated Redirect Target Passed to AGI Transfer
+
+**File:** `lib/adhearsion/translator/asterisk/call.rb`
+**Status:** Fixed (commit ebf107e7)
+
+**Issue:** The Redirect command passed `command.to` directly to Asterisk's
+`EXEC Transfer` without sanitization. Special characters (`&`, `|`, newlines,
+backticks, `$`) could manipulate call routing or inject Asterisk dialplan syntax.
+
+**Fix:** Added `sanitize_transfer_target` method that strips dangerous characters
+before passing the target to the Transfer AGI command.
+
+**Test:** `spec/adhearsion/translator/asterisk/call_redirect_security_spec.rb`
+
+---
+
+### MEDIUM #21: Caller ID Spoofing via Unvalidated `from` Field
+
+**File:** `lib/adhearsion/translator/asterisk/call.rb`
+**Status:** Fixed (commit a9e0d1c1)
+
+**Issue:** The `dial` method passed `dial_command.from` directly as `callerid`
+to Asterisk's Originate without sanitization. Newlines, quotes, and backslashes
+could inject AMI parameters.
+
+**Fix:** Sanitized the `from` field via `sanitize_header_value` before use as callerid.
+
+**Test:** `spec/adhearsion/translator/asterisk/call_callerid_security_spec.rb`
+
+---
+
+### MEDIUM #22: Unbounded Bridge Cache (Memory Exhaustion)
+
+**Files:** `lib/adhearsion/translator/asterisk.rb`, `lib/adhearsion/translator/asterisk/call.rb`
+**Status:** Fixed (commit 6da8f368)
+
+**Issue:** The `@bridges` hash grew unboundedly with `BridgeEnter` events and was
+only cleaned up on matching `BridgeLeave` events. Orphaned entries from crashed
+channels or malicious AMI events could exhaust memory.
+
+**Fix:** Added `MAX_BRIDGE_CACHE_SIZE = 500` with LRU eviction and a
+`register_bridge` helper method.
+
+**Test:** `spec/adhearsion/translator/asterisk/bridge_cache_security_spec.rb`
+
+---
+
+### MEDIUM #23: `class_eval` with String Interpolation in CallController
+
+**File:** `lib/adhearsion/call_controller.rb`
+**Status:** Fixed (commit 0b7e776f)
+
+**Issue:** Callback registration used `class_eval` with heredoc string interpolation
+to define methods. While currently safe (keys come from a fixed hash), the pattern
+is fragile and could become a code injection vector if callback names were ever
+dynamically derived.
+
+**Fix:** Replaced `class_eval <<-STOP ... #{name} ...` with `define_singleton_method`,
+which is safe by construction and cannot be exploited via string injection.
+
+**Test:** `spec/adhearsion/call_controller_classeval_security_spec.rb`
+
+---
+
+### MEDIUM #24: No Timeout on AGI Command Response (Thread Hang DoS)
+
+**File:** `lib/adhearsion/translator/asterisk/call.rb`
+**Status:** Fixed (commit f5c883a5)
+
+**Issue:** `execute_agi_command` called `response.value` without a timeout,
+blocking the thread indefinitely if Asterisk never sent a response. A misbehaving
+or malicious Asterisk server could permanently hang call processing threads.
+
+**Fix:** Added `AGI_TIMEOUT = 120` seconds. On expiry, raises `AGITimeoutError`
+instead of blocking forever.
+
+**Test:** `spec/adhearsion/translator/asterisk/call_agi_timeout_security_spec.rb`
+
+---
+
+### LOW #25: PII (from/to) Logged at INFO Level in Call End
+
+**File:** `lib/adhearsion/call.rb`
+**Status:** Fixed (commit 4b87ea06)
+
+**Issue:** Caller/callee identifiers (phone numbers, SIP URIs, names) were logged
+at INFO level in the call end handler. These are PII that should not appear in
+production logs.
+
+**Fix:** Split the log line: reason at INFO, from/to details at DEBUG only.
+
+**Test:** `spec/adhearsion/call_pii_logging_security_spec.rb`
+
+---
+
+### LOW #26: URI Scheme Not Whitelisted in Output Formatter (SSRF)
+
+**File:** `lib/adhearsion/call_controller/output/formatter.rb`
+**Status:** Fixed (commit c88592cd)
+
+**Issue:** The `uri?` method accepted any URI scheme (`file://`, `data://`,
+`gopher://`, etc.), which could trigger SSRF when a media server fetches the URL.
+
+**Fix:** Added `ALLOWED_URI_SCHEMES = %w[http https file]` whitelist. Only these
+schemes are recognized as audio URIs.
+
+**Test:** `spec/adhearsion/call_controller/output/formatter_uri_security_spec.rb`
+
+---
+
 ## Summary
 
 | # | Severity | Issue | Status |
@@ -346,8 +458,15 @@ contains `..` or null byte sequences.
 | 17 | HIGH | Bare rescue silences all errors | Fixed |
 | 18 | HIGH | SIP header injection via unescaped interpolation | Fixed |
 | 19 | HIGH | Path traversal in audio file playback | Fixed |
+| 20 | MEDIUM | Unvalidated redirect target to AGI Transfer | Fixed |
+| 21 | MEDIUM | Caller ID spoofing via unvalidated from field | Fixed |
+| 22 | MEDIUM | Unbounded bridge cache (memory exhaustion) | Fixed |
+| 23 | MEDIUM | class_eval with string interpolation | Fixed |
+| 24 | MEDIUM | No timeout on AGI response (thread hang DoS) | Fixed |
+| 25 | LOW | PII (from/to) logged at INFO level | Fixed |
+| 26 | LOW | URI scheme not whitelisted (SSRF) | Fixed |
 
-All 19 fixes include regression tests (35 test examples total).
+All 26 fixes include regression tests (44 test examples total).
 
 Run the full security test suite with:
 
@@ -369,5 +488,12 @@ bundle exec rspec \
   spec/adhearsion/translator/asterisk/dtmf_recognizer_cache_security_spec.rb \
   spec/adhearsion/translator/asterisk/call_send_message_security_spec.rb \
   spec/adhearsion/translator/asterisk/call_header_injection_security_spec.rb \
-  spec/adhearsion/translator/asterisk/component/output_path_traversal_security_spec.rb
+  spec/adhearsion/translator/asterisk/component/output_path_traversal_security_spec.rb \
+  spec/adhearsion/translator/asterisk/call_redirect_security_spec.rb \
+  spec/adhearsion/translator/asterisk/call_callerid_security_spec.rb \
+  spec/adhearsion/translator/asterisk/bridge_cache_security_spec.rb \
+  spec/adhearsion/call_controller_classeval_security_spec.rb \
+  spec/adhearsion/translator/asterisk/call_agi_timeout_security_spec.rb \
+  spec/adhearsion/call_pii_logging_security_spec.rb \
+  spec/adhearsion/call_controller/output/formatter_uri_security_spec.rb
 ```
