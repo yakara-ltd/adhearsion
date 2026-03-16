@@ -10,6 +10,9 @@ module Adhearsion
         include HasGuardedHandlers
 
         InvalidCommandError = Class.new Error
+        AGITimeoutError = Class.new Error
+
+        AGI_TIMEOUT = 120
 
         OUTBOUND_CHANNEL_MATCH = /.* <(?<channel>.*)>/.freeze
 
@@ -311,9 +314,11 @@ module Adhearsion
             response.signal Celluloid::Internals::Response::Success.new(nil, event)
           end
           agi.execute @ami_client
-          event = response.value
+          event = response.value(AGI_TIMEOUT)
           return unless event
           agi.parse_result event
+        rescue Celluloid::ConditionError
+          raise AGITimeoutError, "AGI command '#{command}' timed out after #{AGI_TIMEOUT}s"
         end
 
         def logger_id
