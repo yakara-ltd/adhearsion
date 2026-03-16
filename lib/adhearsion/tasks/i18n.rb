@@ -13,7 +13,7 @@ namespace :i18n do
     locale_files.each do |locale_file|
       # We only support YAML for now
       next unless locale_file =~ /\.ya?ml$/
-      prompts = YAML.load File.read(locale_file)
+      prompts = YAML.safe_load File.read(locale_file), permitted_classes: [Symbol]
 
       locale = prompts.keys.first
       prompts = prompts[locale]
@@ -58,7 +58,7 @@ namespace :i18n do
       # We only support YAML for now
       next unless locale_file =~ /\.ya?ml$/
 
-      prompts = YAML.load File.read(locale_file)
+      prompts = YAML.safe_load File.read(locale_file), permitted_classes: [Symbol]
 
       seen_locales << locale = prompts.keys.first
       prompts = prompts[locale]
