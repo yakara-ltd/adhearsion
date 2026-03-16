@@ -10,12 +10,22 @@ module Adhearsion
     class Asterisk
       module Component
         class DTMFRecognizer
+
           class BuiltinMatcherCache
             include Singleton
             include MonitorMixin
 
+            MAX_CACHE_SIZE = 100
+
             def get(uri)
-              synchronize { cache[uri] ||= fetch(uri) }
+              synchronize do
+                if (matcher = cache[uri])
+                  matcher
+                else
+                  evict_oldest_if_full
+                  cache[uri] = fetch(uri)
+                end
+              end
             end
 
             private
@@ -27,6 +37,10 @@ module Adhearsion
 
             def cache
               @cache ||= {}
+            end
+
+            def evict_oldest_if_full
+              cache.shift if cache.size >= MAX_CACHE_SIZE
             end
           end
 
