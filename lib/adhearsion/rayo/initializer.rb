@@ -14,6 +14,8 @@ module Adhearsion
         def init
           self.config = Adhearsion.config.core
 
+          Adhearsion::Configuration.warn_if_default_credentials!(Adhearsion.config)
+
           username = self.config.username
           if (self.config.type || :xmpp) == :xmpp
             username = Blather::JID.new username

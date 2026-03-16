@@ -7,6 +7,18 @@ module Adhearsion
 
     ConfigurationError = Class.new Adhearsion::Error # Error raised while trying to configure a non existent plugin
 
+    DEFAULT_USERNAME = "usera@127.0.0.1".freeze
+    DEFAULT_PASSWORD = "1".freeze
+
+    def self.warn_if_default_credentials!(config)
+      logger = Adhearsion::Logging.get_logger(self)
+      if config.core.username == DEFAULT_USERNAME || config.core.password == DEFAULT_PASSWORD
+        logger.warn "Default credentials detected! Your system is using insecure " \
+          "default credentials (username: '#{DEFAULT_USERNAME}', password: '#{DEFAULT_PASSWORD}'). " \
+          "Please update config.core.username and config.core.password before deploying to production."
+      end
+    end
+
     def self.validate_number(value)
       return 1.0/0.0 if ["Infinity", 1.0/0.0].include? value
       value.to_i
