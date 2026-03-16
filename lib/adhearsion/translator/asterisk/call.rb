@@ -406,12 +406,18 @@ module Adhearsion
           variables = { :adhearsion_call_id => id }
           header_counter = 51
           headers.each do |name, value|
-            variables["SIPADDHEADER#{header_counter}"] = "\"#{name}: #{value}\""
+            sanitized_name = sanitize_header_value(name.to_s)
+            sanitized_value = sanitize_header_value(value.to_s)
+            variables["SIPADDHEADER#{header_counter}"] = "\"#{sanitized_name}: #{sanitized_value}\""
             header_counter += 1
           end
           variables.inject([]) do |a, (k, v)|
             a << "#{k}=#{v}"
           end.join(',')
+        end
+
+        def sanitize_header_value(str)
+          str.gsub(/[\r\n\0"\\]/, '')
         end
       end
     end
