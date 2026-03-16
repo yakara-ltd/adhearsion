@@ -20,17 +20,15 @@ module Adhearsion
 
     self.callbacks = {:before => [], :after => [], :on_error => []}
 
-    self.callbacks.keys.each do |name|
-      class_eval <<-STOP
-        def self.#{name}(method_name = nil, &block)
-          callback = if method_name
-            lambda { send method_name }
-          elsif block
-            block
-          end
-          self.callbacks = self.callbacks.dup.tap { |cb| cb[:#{name}] += Array(callback) }
+    self.callbacks.keys.each do |callback_name|
+      define_singleton_method(callback_name) do |method_name = nil, &block|
+        callback = if method_name
+          lambda { send method_name }
+        elsif block
+          block
         end
-      STOP
+        self.callbacks = self.callbacks.dup.tap { |cb| cb[callback_name] += Array(callback) }
+      end
     end
 
     class << self
