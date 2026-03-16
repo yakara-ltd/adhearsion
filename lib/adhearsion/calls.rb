@@ -78,7 +78,7 @@ module Adhearsion
 
     def method_missing(method, *args, &block)
       @mutex.synchronize do
-        @calls.send method, *args, &block
+        @calls.public_send method, *args, &block
       end
     end
 

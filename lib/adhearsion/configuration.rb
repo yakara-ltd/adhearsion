@@ -149,7 +149,7 @@ module Adhearsion
     #
     # @return [Loquacious::Configuration] configuration object or nil if the plugin does not exist
     def [](value)
-      self.send value.to_sym
+      self.public_send value.to_sym
     end
 
     ##

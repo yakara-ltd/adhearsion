@@ -17,7 +17,7 @@ class ThreadSafeArray < BasicObject
 
   def method_missing(method, *args, &block)
     @mutex.synchronize do
-      @array.send method, *args, &block
+      @array.public_send method, *args, &block
     end
   end
 end

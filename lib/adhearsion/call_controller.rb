@@ -88,7 +88,7 @@ module Adhearsion
 
     def method_missing(method_name, *args, &block)
       if @block_context
-        @block_context.send method_name, *args, &block
+        @block_context.public_send method_name, *args, &block
       else
         super
       end

@@ -74,7 +74,7 @@ module Adhearsion
 
     class << self
       def method_missing(method_name, *args, &block)
-        Handler.instance.send method_name, *args, &block
+        Handler.instance.public_send method_name, *args, &block
       end
 
       def respond_to_missing?(method_name, include_private = false)
