@@ -3,7 +3,7 @@
 ## Security Fixes
 
 This document tracks the security remediation work performed on 2026-03-16,
-addressing critical and high severity findings from the security review.
+addressing all findings from the security review.
 
 ---
 
@@ -105,6 +105,96 @@ Authorization header uses `token ` prefix and webhook URL starts with `https://`
 
 ---
 
+### MEDIUM #7: Dynamic `eval` on Block Bindings
+
+**Files:** `lib/adhearsion/call_controller/input/menu_builder.rb`, `lib/adhearsion/call_controller.rb`
+**Status:** Fixed (commit dade9b70)
+
+**Issue:** `eval "self", block.binding` is fragile and could become an RCE vector
+if untrusted strings are ever passed.
+
+**Fix:** Replaced with `block.binding.receiver` (safe, direct Ruby API since 2.6+).
+
+**Test:** `spec/adhearsion/eval_security_spec.rb` — source-level scan verifying
+no `eval "self"` calls remain.
+
+---
+
+### MEDIUM #8: `method_missing` + `send` Proxy Pattern
+
+**Files:** `call_controller.rb`, `menu_builder.rb`, `calls.rb`, `console.rb`, `events.rb`, `thread_safety.rb`, `configuration.rb`
+**Status:** Fixed (commit 1bcddf44)
+
+**Issue:** Unconstrained `send` in `method_missing` proxies allows calling
+private/protected methods on the target object.
+
+**Fix:** Replaced `.send` with `.public_send` across all 7 files.
+
+**Test:** `spec/adhearsion/method_missing_security_spec.rb` — source-level scan
+of all 7 files verifying no `.send` calls remain (excluding `public_send`/`__send__`).
+
+---
+
+### MEDIUM #9: Sensitive Data in INFO Logs
+
+**File:** `lib/adhearsion/call_controller/input/menu_builder.rb`
+**Status:** Fixed (commit 40b3f041)
+
+**Issue:** User utterances (DTMF digits, speech) logged at INFO level. If users
+enter PINs, credit card numbers, or SSNs, these end up in plaintext production logs.
+
+**Fix:** Split the log line: status at INFO, utterance/interpretation at DEBUG only.
+
+**Test:** `spec/adhearsion/log_redaction_security_spec.rb` — verifies no
+utterance/interpretation data is logged at INFO level.
+
+---
+
+### MEDIUM #10: Nokogiri XML Parsing — NONET Flag
+
+**File:** `lib/adhearsion/rayo/component/input.rb`
+**Status:** Fixed (commit 44108eb4)
+
+**Issue:** Nokogiri XML parsing used only `NOBLANKS` without `NONET`, allowing
+potential network requests during parsing (XXE defense-in-depth).
+
+**Fix:** Added `NONET` flag alongside `NOBLANKS` to prevent network access.
+
+**Test:** `spec/adhearsion/nokogiri_security_spec.rb` — verifies NONET flag
+is present in all Nokogiri::XML.parse calls.
+
+---
+
+### LOW #11: Thread Safety with Class Variables
+
+**File:** `lib/adhearsion/plugin.rb`
+**Status:** Fixed (commit 86a486b4)
+
+**Issue:** `@@rake_tasks` class variable modified without synchronization, creating
+a race condition if plugins are loaded from multiple threads.
+
+**Fix:** Added `@@rake_tasks_mutex` to protect all reads and writes to `@@rake_tasks`.
+
+**Test:** `spec/adhearsion/plugin_thread_safety_spec.rb` — verifies mutex is present.
+
+---
+
+### LOW #12: No TLS Enforcement by Default
+
+**File:** `lib/adhearsion/configuration.rb`, `lib/adhearsion/rayo/initializer.rb`
+**Status:** Fixed (commit ab69a38f)
+
+**Issue:** `certs_directory` defaults to `nil`, meaning connections to Asterisk/XMPP
+servers are unencrypted unless explicitly configured.
+
+**Fix:** Added `Configuration.warn_if_no_tls!` which emits a warning at startup
+when TLS is not configured. Called during Rayo initialization.
+
+**Test:** `spec/adhearsion/tls_security_spec.rb` — verifies warning is emitted
+when certs_directory is nil and suppressed when configured.
+
+---
+
 ## Summary
 
 | # | Severity | Issue | Status |
@@ -115,12 +205,27 @@ Authorization header uses `token ` prefix and webhook URL starts with `https://`
 | 4 | HIGH | HTTP server bound to 0.0.0.0 | Fixed |
 | 5 | HIGH | Plaintext password prompts | Fixed |
 | 6 | HIGH | GitHub basic auth + HTTP URLs | Fixed |
+| 7 | MEDIUM | eval on block bindings | Fixed |
+| 8 | MEDIUM | send in method_missing proxies | Fixed |
+| 9 | MEDIUM | Sensitive data in INFO logs | Fixed |
+| 10 | MEDIUM | Nokogiri NONET flag missing | Fixed |
+| 11 | LOW | Thread safety with class variables | Fixed |
+| 12 | LOW | No TLS enforcement by default | Fixed |
 
-All fixes include regression tests. Run the full security test suite with:
+All 12 fixes include regression tests (23 test examples total).
+
+Run the full security test suite with:
 
 ```
-bundle exec rspec spec/adhearsion/cli_commands/plugin_command_spec.rb \
+bundle exec rspec \
+  spec/adhearsion/cli_commands/plugin_command_spec.rb \
   spec/adhearsion/tasks/i18n_task_security_spec.rb \
   spec/adhearsion/configuration_security_spec.rb \
-  spec/adhearsion/http_server_security_spec.rb
+  spec/adhearsion/http_server_security_spec.rb \
+  spec/adhearsion/eval_security_spec.rb \
+  spec/adhearsion/method_missing_security_spec.rb \
+  spec/adhearsion/log_redaction_security_spec.rb \
+  spec/adhearsion/nokogiri_security_spec.rb \
+  spec/adhearsion/plugin_thread_safety_spec.rb \
+  spec/adhearsion/tls_security_spec.rb
 ```
