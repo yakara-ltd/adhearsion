@@ -77,7 +77,7 @@ module Adhearsion
         end
 
         def build(&block)
-          @context = eval "self", block.binding
+          @context = block.binding.receiver
           instance_eval(&block)
         end
 

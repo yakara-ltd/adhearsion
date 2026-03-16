@@ -82,7 +82,7 @@ module Adhearsion
     #
     def initialize(call, metadata = nil, &block)
       @call, @metadata, @block = call, metadata || {}, block
-      @block_context = eval "self", @block.binding if @block
+      @block_context = @block.binding.receiver if @block
       @active_components = []
     end
 
