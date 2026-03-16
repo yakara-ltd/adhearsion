@@ -198,7 +198,8 @@ module Adhearsion
 
         def send_message(body)
           execute_agi_command 'EXEC SendText', body
-        rescue
+        rescue RubyAMI::Error, ChannelGoneError => e
+          logger.warn "Failed to send message: #{e.class}: #{e.message}"
         end
 
         def execute_command(command)
