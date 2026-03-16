@@ -52,7 +52,8 @@ module Adhearsion
         end
 
         def process_result(result)
-          @logger.info "[MenuBuilder] FreeSWITCH returned: status=#{result.status} utterance=#{result.utterance.inspect} interpretation=#{result.interpretation.inspect}"
+          @logger.info "[MenuBuilder] FreeSWITCH returned: status=#{result.status}"
+          @logger.debug "[MenuBuilder] FreeSWITCH detail: utterance=#{result.utterance.inspect} interpretation=#{result.interpretation.inspect}"
           if result.status == :match
             handle_match result
           else
