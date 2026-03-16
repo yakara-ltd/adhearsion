@@ -111,7 +111,7 @@ module Adhearsion
     end
 
     def self.method_missing(method_name, *args, &block)
-      instance.send method_name, *args, &block
+      instance.public_send method_name, *args, &block
     end
   end
 end

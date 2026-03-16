@@ -14,6 +14,7 @@ describe 'method_missing proxy security' do
     'Events' => 'lib/adhearsion/events.rb',
     'ThreadSafeArray' => 'lib/adhearsion/foundation/thread_safety.rb',
     'Configuration' => 'lib/adhearsion/configuration.rb',
+    'Process' => 'lib/adhearsion/process.rb',
   }
 
   files_to_check.each do |name, path|
