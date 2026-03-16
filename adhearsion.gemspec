@@ -24,7 +24,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'activesupport', ["~> 8.0"]
   # s.add_runtime_dependency 'activesupport', ["~> 7.1.5.2"]
   s.add_runtime_dependency 'adhearsion-loquacious', ["~> 1.9"]
-  s.add_runtime_dependency 'blather', ["~> 2.0.0.rc3"]
+  s.add_runtime_dependency 'blather', ["~> 2.1.0.rc1"]
   s.add_runtime_dependency 'celluloid', ["~> 0.18.0"]
   s.add_runtime_dependency 'countdownlatch'
   s.add_runtime_dependency 'deep_merge'
